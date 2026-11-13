@@ -966,7 +966,7 @@ uni_romance_yes: { bg:"park", text:`${uHeCap()} берёт тебя за рук�
   choices:[
     {text:"«Бывает»", effects:()=>{setMental(+1);}, next:"next_day",
      after:`${uHeCap()} смеётся. Притягивает тебя ближе.\n\nВы стоите так до темноты.`},
-    {text:"«Я тоже не верил${g("","а")}»", effects:()=>{setMental(+1);}, next:"next_day",
+    {text:`«Я тоже не верил${g("","а")}»`, effects:()=>{setMental(+1);}, next:"next_day",
      after:`${uHeCap()} кивает. «Теперь верим».`},
   ]},
 
@@ -1574,4 +1574,4 @@ function genderScreen(){
 startScreen();
 </script>
 </body>
-    </html>
+ </html>
