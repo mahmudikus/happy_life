@@ -60,6 +60,11 @@ const state = {
   thingLevel:0, thingNextDay:180,
   recentScenes:[],
   dementia:0,
+  sceneHistory:[],
+  lastSceneId:null,
+  scenePlayCount:{},
+  yearSeed:0,
+  dayEventSeed:0,
 };
 
 const MONTHS = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
@@ -121,7 +126,17 @@ const spouseRelName = () => flag("married_lena") ? "lena" : "uni";
 const lowMentalActive = () => state.mental <= 2;
 const glance = () => lowMentalActive() ? "Люди отводят взгляды. " : "";
 
-const pickScene = pool => {
+function seededRandom(seed){
+  let x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+function dailySeed(){
+  const base = state.day * 7919 + state.y * 104729 + state.m * 1299709 + state.d * 15485863;
+  return base + state.yearSeed;
+}
+
+function pickScene(pool){
   const valid = pool.filter(id => {
     const s = scenes[id];
     if(!s) return false;
@@ -129,15 +144,30 @@ const pickScene = pool => {
     if(s.when && !s.when()) return false;
     return true;
   });
-  const pool2 = valid.length ? valid : pool.filter(id => scenes[id]);
-  const avail = pool2.filter(s => !state.recentScenes.includes(s));
-  const src = avail.length ? avail : pool2;
-  if(!src.length) return "day_start";
-  const pick = src[Math.floor(Math.random()*src.length)];
+  if(!valid.length) return "day_start";
+
+  const recent = state.recentScenes || [];
+  const counts = {};
+  recent.forEach(id => counts[id] = (counts[id] || 0) + 1);
+
+  const avail = valid.filter(id => {
+    if((counts[id] || 0) >= 2) return false;
+    return true;
+  });
+
+  const src = avail.length ? avail : valid.filter(id => !recent.includes(id));
+  const finalPool = src.length ? src : valid;
+
+  const seed = dailySeed() + (state.scenePlayCount._extra || 0);
+  const idx = Math.floor(seededRandom(seed) * finalPool.length);
+  const pick = finalPool[Math.min(idx, finalPool.length - 1)];
+
+  state.scenePlayCount._extra = (state.scenePlayCount._extra || 0) + 1;
+
   state.recentScenes.push(pick);
   if(state.recentScenes.length > 6) state.recentScenes.shift();
   return pick;
-};
+}
 
 function lenaProtect(){
   state.flags.lena_protect_count = (state.flags.lena_protect_count||0) + 1;
@@ -258,8 +288,12 @@ const QUESTIONS = [
 ];
 
 function buildTeacherScene(){
-  const q = QUESTIONS[Math.floor(Math.random()*QUESTIONS.length)];
-  const answers = [q.correct, ...q.wrong].sort(()=>Math.random()-0.5);
+  const seed = dailySeed();
+  const qi = Math.floor(seededRandom(seed) * QUESTIONS.length);
+  const q = QUESTIONS[qi];
+  const answers = [q.correct, ...q.wrong].sort((a,b)=>{
+    return seededRandom(seed + a.charCodeAt(0)) - 0.5;
+  });
   return {
     bg:"school",
     text:`Марина Павловна стучит указкой по доске. В классе двадцать три человека. Все смотрят в журнал.\n\n«${state.name}», — говорит она, не поднимая глаз. «К доске».\n\nКласс затихает. Кто-то хихикает. У тебя потеют ладони. Вопрос по ${q.subject}: ${q.q}`,
@@ -1384,6 +1418,7 @@ function advanceDay(){
   if(state.d > dim){ state.d = 1; state.m += 1; }
   if(state.m > 12){ state.m = 1; state.y += 1; }
   state.day += 1;
+  state.yearSeed = (state.day * 2654435761) % 4294967296;
 
   if(flag("killed_someone")) setMental(-1);
   if(state.fear>8) setMental(-1);
