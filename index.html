@@ -56,6 +56,7 @@ const BG = {
   orphanage:"linear-gradient(135deg,#12100a,#080605)",
   neighbor:"linear-gradient(135deg,#1a1410,#0a0806)",
   montage:"linear-gradient(135deg,#0d0d0d,#050505)",
+  holiday:"linear-gradient(135deg,#1a0a0a,#0a0505)",
 };
 
 const state = {
@@ -71,6 +72,7 @@ const state = {
   recentScenes:[],
   recentMontage:[],
   usedMontage:{},
+  usedHolidays:{},
   dementia:0,
   scenePlayCount:{},
   dailySeed:1,
@@ -346,6 +348,7 @@ const DEATHS = {
   lena_avenge:"убит защищая друга", lena_betray:"убит другом",
   psych_kill:"убит в психушке", suicide_watch:"умер под наблюдением",
   dogs_attack:"растерзан собаками",
+  firework:"погиб от фейерверка", ice:"утонул под льдом",
 };
 
 const QUESTIONS = [
@@ -443,6 +446,69 @@ first_day_after: { bg:"school", text:`Последний урок закончи
 first_day_alone: { bg:"school", text:`Ты идёшь по коридору один. Урок уже начался.\n\nПрисаживаешься на подоконник. Так проходит час. Потом ещё один.\n\nТебя находят.`,
   next:"next_day"},
 
+/* ---------- ПРАЗДНИКИ ---------- */
+new_year: { bg:"holiday", text:`31 декабря. Новый год.\n\nЁлка в углу. Мишура. По телевизору — старый фильм.\n\nМать накрывает на стол. Отец достаёт шампанское. Тебе — лимонад.\n\n— Загадывай желание, — говорит мать. — Пока часы бьют.`,
+  choices:[
+    {text:"Загадать что-то хорошее.", effects:()=>{setMental(+2);setRel("mother",+1);state.flags.ny_good=true;}, next:"next_day",
+     after:`Ты зажмуриваешься. И загадываешь.\n\nЧасы бьют двенадцать. Бой глухой, будто из-под воды.\n\nНа секунду тебе кажется, что кто-то стоит за окном. Но там только снег.`},
+    {text:"Загадать что-то для себя.", effects:()=>{setMental(+1);state.flags.ny_selfish=true;}, next:"next_day",
+     after:`Ты загадываешь. Про себя.\n\nЧасы бьют. Мать смотрит на тебя. Улыбается. Но в глазах — вопрос.`},
+    {text:"Не загадывать.", effects:()=>{state.fear+=1;}, next:"next_day",
+     after:`Ты не загадываешь.\n\nЧасы бьют. Что-то в доме меняется. Невидимо.\n\nТы чувствуешь это кожей.`},
+  ]},
+
+march_8: { bg:"holiday", text:`8 марта.\n\nМать с утра в хорошем настроении. Пахнет мимозой. Отец купил торт.\n\n— ${state.name}, — говорит мать. — А ты что подаришь?`,
+  choices:[
+    {text:"Нарисовать открытку.", effects:()=>{setRel("mother",+2);setMental(+1);}, next:"next_day",
+     after:`Ты рисуешь. Долго. Криво.\n\nМать вешает открытку на холодильник. Не снимает её до самого лета.`},
+    {text:"Помыть посуду.", effects:()=>{setRel("mother",+1);setRep(+1);}, next:"next_day",
+     after:`Ты моёшь посуду. Впервые за долгое время — сам${g("","а")}.\n\nМать стоит в дверях. Смотрит. Молчит.`},
+    {text:"Сказать «с праздником».", effects:()=>{setRel("mother",+1);}, next:"next_day",
+     after:`— С праздником, мам.\n\nОна кивает. Целует тебя в макушку. От неё пахнет мимозой и чем-то ещё. Чем-то домашним.`},
+    {text:"Ничего.", effects:()=>{setRel("mother",-1);setMental(-1);}, next:"next_day",
+     after:`Ты молчишь.\n\nМать ждёт. Потом отворачивается к плите.\n\nВесь день она молчит.`},
+  ]},
+
+feb_23: { bg:"holiday", text:`23 февраля.\n\nОтец с утра в парадной рубашке. Смотрит новости. Пьёт чай.\n\n— ${state.name}, — говорит он. — Ты знаешь, что это за праздник?`,
+  choices:[
+    {text:"— День защитника Отечества.", effects:()=>{setRel("father",+2);setRep(+1);}, next:"next_day",
+     after:`Отец кивает. Довольно.\n\n— Правильно. Молодец.\n\nОн впервые за долгое время смотрит на тебя с уважением.`},
+    {text:"— Не знаю.", effects:()=>{setRel("father",-1);}, next:"next_day",
+     after:`Отец хмурится.\n\n— Плохо. Надо знать.\n\nОн уходит в комнату. Больше не разговаривает с тобой весь день.`},
+    {text:"— Праздник пап.", effects:()=>{setRel("father",+1);setMental(+1);}, next:"next_day",
+     after:`Отец смеётся. Впервые за долгое время — искренне.\n\n— Ну, можно и так сказать.\n\nОн взъерошивает тебе волосы.`},
+  ]},
+
+birthday_holiday: { bg:"holiday", text:`28 ноября. Твой день рождения.\n\nТебе ${state.age}.\n\nТорт на столе. Свечи. Мать стоит рядом. Улыбается. Но глаза грустные.`,
+  choices:[
+    {text:"Задуть свечи.", effects:()=>{setMental(+2);}, next:"next_day",
+     after:`Ты задуваешь. Один огонёк не гаснет. Дуешь ещё раз. Исчезает.\n\nМать улыбается. Но в глазах — что-то ещё.`},
+    {text:`Позвать ${F()}.`, when:()=>flag("lena_friend")&&!flag("lena_dead")&&!flag("lena_left"), effects:()=>{setRel("lena",+1);setMental(+1);}, next:"next_day",
+     after:`${F()} приходит с самодельной открыткой. На ней — две фигурки и солнце.\n\n— Это мы, — говорит ${fHe()}.\n\nТы вешаешь открытку над кроватью.`},
+    {text:"Загадать желание.", effects:()=>{setMental(+1);state.flags.bd_wish=true;}, next:"next_day",
+     after:`Ты загадываешь. Долго.\n\nСвечи гаснут. Мать хлопает в ладоши.\n\nНо что-то в комнате меняется. Ты не понимаешь что.`},
+  ]},
+
+may_9: { bg:"holiday", text:`9 мая.\n\nДед надел пиджак с медалями. Бабушка достала старые фотографии.\n\n— Смотри, — говорит дед. — Это мой брат. Он не вернулся.`,
+  choices:[
+    {text:"Спросить про брата.", effects:()=>{setMental(-1);setRel("grandpa",+2);}, next:"next_day",
+     after:`Дед рассказывает. Долго.\n\nТы слушаешь. Не перебиваешь.\n\nВ конце он говорит:\n\n— Хорошо, что ты спросил. Никто не спрашивает.`},
+    {text:"Смотреть фотографии молча.", effects:()=>{setMental(+1);}, next:"next_day",
+     after:`Ты долго смотришь. На лица. На медали. На то, как дед держит фотографии — осторожно, будто они могут рассыпаться.`},
+    {text:"Уйти.", effects:()=>{setRel("grandpa",-1);setMental(-1);}, next:"next_day",
+     after:`Ты выходишь из комнаты.\n\nДед остаётся один. С фотографиями. С тишиной.`},
+  ]},
+
+easter: { bg:"holiday", text:`Пасха.\n\nМать испекла кулич. Красит яйца. Пахнет сдобой и воском.\n\n— Будешь красить? — спрашивает она.`,
+  choices:[
+    {text:"Красить яйца.", effects:()=>{setRel("mother",+2);setMental(+1);}, next:"next_day",
+     after:`Ты красишь. Долго. Одно яйцо получается особенно красивым.\n\nМать ставит его на стол. Отдельно.`},
+    {text:"Пойти в церковь.", effects:()=>{setMental(+1);setRep(+1);}, next:"next_day",
+     after:`Ты идёшь с матерью в церковь.\n\nСвечи. Пахнет ладаном.\n\nТы стоишь и смотришь на огоньки. Тебе спокойно.`},
+    {text:"Остаться дома.", effects:()=>{}, next:"next_day"},
+  ]},
+
+/* ---------- ПЛОХАЯ ПОГОДА ---------- */
 weather_bad: { bg:"home", when:()=>!flag("weather_bad_seen"), text:`Холодный ветер. Дождь.\n\nМать говорит:\n\n— Надень куртку.\n\nТы стоишь в дверях.`,
   choices:[
     {text:"Надеть куртку.", effects:()=>{state.flags.weather_bad_seen=true;setRel("mother",+1);}, next:"next_day",
@@ -1329,30 +1395,34 @@ old_age_loop: { bg:"home", text:`${glance()}Ещё год.\n\nВопрос — �
     {text:"Закончить самому.", effects:()=>{die("pills",state.age);}},
   ]},
 
-birthday_kid: { bg:"home", when:()=>state.age<12,
+birthday_kid: { bg:"holiday", when:()=>state.age<12,
   text:`28 ноября. Тебе ${state.age}.\n\nТорт на столе. Свечи. Мать стоит рядом. Улыбается. Но глаза грустные.`,
   choices:[
     {text:"Задуть свечи.", effects:()=>{setMental(+2);}, next:"next_day",
      after:`Ты задуваешь. Один огонёк не гаснет. Дуешь ещё раз. Исчезает.\n\nМать улыбается. Но в глазах — что-то ещё.`},
     {text:`Позвать ${F()}.`, when:()=>flag("lena_friend")&&!flag("lena_dead")&&!flag("lena_left"), effects:()=>{setRel("lena",+1);setMental(+1);}, next:"next_day",
      after:`${F()} приходит с самодельной открыткой. На ней — две фигурки и солнце.\n\n— Это мы, — говорит ${fHe()}.\n\nТы вешаешь открытку над кроватью.`},
+    {text:"Загадать желание.", effects:()=>{setMental(+1);state.flags.bd_wish=true;}, next:"next_day",
+     after:`Ты загадываешь. Долго.\n\nСвечи гаснут. Мать хлопает в ладоши.\n\nНо что-то в комнате меняется. Ты не понимаешь что.`},
   ]},
 
-birthday_teen: { bg:"home", when:()=>state.age>=12&&state.age<19,
+birthday_teen: { bg:"holiday", when:()=>state.age>=12&&state.age<19,
   text:`28 ноября. Тебе ${state.age}.\n\nДень рождения.`,
   choices:[
     {text:"С семьёй.", effects:()=>{setRel("mother",+1);setMental(+1);}, next:"next_day"},
     {text:"Вечеринку.", effects:()=>{setMental(+2);}, next:"next_day"},
+    {text:"Позвать друзей.", when:()=>flag("lena_friend")&&!flag("lena_dead")&&!flag("lena_left"), effects:()=>{setRel("lena",+2);setRep(+1);setMental(+1);}, next:"next_day",
+     after:`${F()} приходит первой. И ещё человек пять.\n\nМать накрывает на стол. Отец прячется в комнате. Но вечер получается хорошим.`},
   ]},
 
-birthday_adult: { bg:"home", when:()=>state.age>=19&&state.age<65,
+birthday_adult: { bg:"holiday", when:()=>state.age>=19&&state.age<65,
   text:`28 ноября. Тебе ${state.age}.`,
   choices:[
     {text:"С близкими.", effects:()=>{setMental(+2);}, next:"next_day"},
     {text:"Работать.", effects:()=>{setMental(-1);}, next:"next_day"},
   ]},
 
-birthday_old: { bg:"home", when:()=>state.age>=65,
+birthday_old: { bg:"holiday", when:()=>state.age>=65,
   text:`28 ноября. Тебе ${state.age}.`,
   choices:[
     {text:"Принять гостей.", effects:()=>{if(rel("child")>=3||rel("lena")>=5)setMental(+2);else setMental(-1);}, next:"next_day"},
@@ -1499,6 +1569,34 @@ function getPool(){
   if(a<50) return POOL_35;
   if(a<65) return POOL_50;
   return POOL_65;
+}
+
+/* ---------- ПРАЗДНИКИ: проверка и триггер ---------- */
+function checkHoliday(){
+  const key = `${state.y}_${state.m}_${state.d}`;
+  if(state.usedHolidays[key]) return null;
+
+  if(state.m === 12 && state.d === 31 && state.age >= 5){
+    state.usedHolidays[key] = true;
+    return "new_year";
+  }
+  if(state.m === 3 && state.d === 8 && state.age >= 5){
+    state.usedHolidays[key] = true;
+    return "march_8";
+  }
+  if(state.m === 2 && state.d === 23 && state.age >= 5){
+    state.usedHolidays[key] = true;
+    return "feb_23";
+  }
+  if(state.m === 5 && state.d === 9 && state.age >= 5){
+    state.usedHolidays[key] = true;
+    return "may_9";
+  }
+  if(state.m === 4 && state.d >= 12 && state.d <= 20 && !state.usedHolidays[`${state.y}_easter`] && state.age >= 5){
+    state.usedHolidays[`${state.y}_easter`] = true;
+    return "easter";
+  }
+  return null;
 }
 
 const app = document.getElementById("app");
@@ -1734,6 +1832,34 @@ function showMontage(days){
     setMental(-1);
   }
 
+  const holiday = checkHoliday();
+
+  if(holiday){
+    app.classList.add("fade-out");
+    setTimeout(()=>{
+      app.innerHTML = `
+        <div class="scene">
+          <div class="scene-inner">
+            <div class="status">
+              <span>${state.name}</span>
+              <span>${fmtDate()} · ${state.age} ${state.age<5?"года":"лет"}</span>
+              <span class="${state.mental<=2?"low":""}">${starStr(state.mental)}</span>
+            </div>
+            <p class="text after-text">${lines.join("\n\n")}</p>
+            <div class="choices"><button id="contBtn">Дальше</button></div>
+          </div>
+        </div>`;
+      const sceneEl = app.querySelector(".scene");
+      sceneEl.style.background = BG.montage;
+      document.getElementById("contBtn").onclick = ()=>{
+        app.classList.remove("fade-out");
+        playScene(holiday);
+      };
+      app.classList.remove("fade-out");
+    },150);
+    return;
+  }
+
   if(state.age >= 7 && state.age < 46 && !flag("dogs_met") && state.day >= 3){
     const due = checkTimers();
     let nextEvent = null;
@@ -1845,6 +1971,9 @@ function advanceDay(){
     if(state.age<65) return playScene("birthday_adult");
     return playScene("birthday_old");
   }
+
+  const holiday = checkHoliday();
+  if(holiday) return playScene(holiday);
 
   if(state.age >= 7 && state.age <= 17){
     const lastTeacher = state.flags.teacherLastDay || 0;
