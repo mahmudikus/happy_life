@@ -173,7 +173,7 @@ function pickScene(pool){
     if(s.when && !s.when()) return false;
     return true;
   });
-  if(!valid.length) return "day_start";
+  if(!valid.length) return null;
 
   const recent = state.recentScenes;
   const limit = Math.min(12, Math.max(3, valid.length - 1));
@@ -1535,8 +1535,6 @@ event_anya_revenge: { bg:"corridor_night", when:()=>rel("anya")<-3&&flag("grudge
     {text:"Крикнуть.", effects:()=>{playSfx("glitch");shake();die("anya_stab",state.age,"anya");}},
   ]},
 
-day_start: { bg:"home", text:`Новый день.`, choices:[{text:"Продолжить", next:"next_day"}]},
-
 };
 }
 
@@ -1677,7 +1675,7 @@ function showDeath(){
 }
 
 function playScene(id){
-  if(id==="next_day"||id==="auto_day") return advanceDay();
+  if(!id || id==="next_day" || id==="auto_day" || id==="day_start") return advanceDay();
   let scene = scenes[id];
   if(!scene){
     console.warn("Нет сцены:", id, "→ пропуск");
@@ -1943,17 +1941,22 @@ function showMontage(days){
     sceneEl.style.background = BG.montage;
     document.getElementById("contBtn").onclick = ()=>{
       app.classList.remove("fade-out");
-      if(nextEvent){
-        playScene(nextEvent);
-      } else {
-        playScene(pickScene(getPool()));
-      }
+      if(nextEvent) return playScene(nextEvent);
+      const pick = pickScene(getPool());
+      if(pick) return playScene(pick);
+      return showMontage(60);
     };
     app.classList.remove("fade-out");
   },150);
 }
 
 function advanceDay(){
+  state._chain = (state._chain || 0) + 1;
+  if(state._chain > 200){
+    state._chain = 0;
+    return showMontage(60);
+  }
+
   state.d += 1;
   const dim = new Date(state.y, state.m, 0).getDate();
   if(state.d > dim){ state.d = 1; state.m += 1; }
@@ -2108,7 +2111,9 @@ function autoDay(){
     return showMontage(skipDays);
   }
 
-  playScene(pickScene(getPool()));
+  const pick = pickScene(getPool());
+  if(pick) return playScene(pick);
+  return showMontage(60);
 }
 
 function startScreen(){
